@@ -1,0 +1,987 @@
+{
+  "total": 39483,
+  "total_spécialités": [
+    {
+      "nbre_spécialités": 52
+    }
+  ],
+  "total_villes": [
+    {
+      "nbre_villes": 73
+    }
+  ],
+  "par_specialite": [
+    {
+      "_id": "Médecine Générale",
+      "count": 10493
+    },
+    {
+      "_id": "Chirurgie",
+      "count": 3305
+    },
+    {
+      "_id": "Gynécologie",
+      "count": 2613
+    },
+    {
+      "_id": "Odontologie",
+      "count": 2039
+    },
+    {
+      "_id": "Ophtalmologie",
+      "count": 1799
+    },
+    {
+      "_id": "Pédiatrie ",
+      "count": 1660
+    },
+    {
+      "_id": "Cardiologie",
+      "count": 1504
+    },
+    {
+      "_id": "Psychiatrie ",
+      "count": 1321
+    },
+    {
+      "_id": "Médecine Physique",
+      "count": 1096
+    },
+    {
+      "_id": "Médecine Du Travail",
+      "count": 1073
+    },
+    {
+      "_id": "Dermatologie",
+      "count": 1065
+    },
+    {
+      "_id": "Oto-Rhino-Laryngologie",
+      "count": 1064
+    },
+    {
+      "_id": "Anesthésiologie",
+      "count": 1041
+    },
+    {
+      "_id": "Gastro-Entérologie",
+      "count": 1017
+    },
+    {
+      "_id": "Radiologie ",
+      "count": 981
+    },
+    {
+      "_id": "Médecine Préventive",
+      "count": 914
+    },
+    {
+      "_id": "Orthopédie",
+      "count": 805
+    },
+    {
+      "_id": "Endocrinologie",
+      "count": 732
+    },
+    {
+      "_id": "Néphrologie",
+      "count": 682
+    },
+    {
+      "_id": "Urologie",
+      "count": 651
+    },
+    {
+      "_id": "Aneumologie ",
+      "count": 637
+    },
+    {
+      "_id": "Biologie Médicale",
+      "count": 590
+    },
+    {
+      "_id": "Rhumatologie",
+      "count": 474
+    },
+    {
+      "_id": "Médecine Interne",
+      "count": 326
+    },
+    {
+      "_id": "Oncologie",
+      "count": 272
+    },
+    {
+      "_id": "Neurologie",
+      "count": 263
+    },
+    {
+      "_id": "Anatomopathologie",
+      "count": 260
+    },
+    {
+      "_id": "Chirugie Esthétique, Plastique Et Reconstructive",
+      "count": 145
+    },
+    {
+      "_id": "Hématologie",
+      "count": 130
+    },
+    {
+      "_id": "Radiothérapie ",
+      "count": 83
+    },
+    {
+      "_id": "Nutrition",
+      "count": 74
+    },
+    {
+      "_id": "Chirurgie Maxillo-Faciale",
+      "count": 74
+    },
+    {
+      "_id": "Pharmacie",
+      "count": 57
+    },
+    {
+      "_id": "Médecine Nucléaire",
+      "count": 57
+    },
+    {
+      "_id": "Chirurgie Vasculaire",
+      "count": 50
+    },
+    {
+      "_id": "Gériatrie",
+      "count": 26
+    },
+    {
+      "_id": "Andrologie",
+      "count": 26
+    },
+    {
+      "_id": "Médecine Palliative",
+      "count": 24
+    },
+    {
+      "_id": "Médecine Aiguë",
+      "count": 22
+    },
+    {
+      "_id": "Hépatologie",
+      "count": 10
+    },
+    {
+      "_id": "Obstétrique",
+      "count": 8
+    },
+    {
+      "_id": "non renseigné",
+      "count": 7
+    },
+    {
+      "_id": "Vétérinaire",
+      "count": 3
+    },
+    {
+      "_id": "Coach Sportif",
+      "count": 2
+    },
+    {
+      "_id": "Médecine Douce Et Alternative",
+      "count": 1
+    },
+    {
+      "_id": "Phd",
+      "count": 1
+    },
+    {
+      "_id": "Médecine Légale",
+      "count": 1
+    },
+    {
+      "_id": "Opticien",
+      "count": 1
+    },
+    {
+      "_id": "Infectiologie",
+      "count": 1
+    },
+    {
+      "_id": "Médecine De Catastrophe",
+      "count": 1
+    },
+    {
+      "_id": "Généticien",
+      "count": 1
+    },
+    {
+      "_id": "Développement Personnel",
+      "count": 1
+    }
+  ],
+  "par_ville": [
+    {
+      "_id": "Casablanca",
+      "count": 17038
+    },
+    {
+      "_id": "Rabat",
+      "count": 3791
+    },
+    {
+      "_id": "Marrakech",
+      "count": 2874
+    },
+    {
+      "_id": "Fès",
+      "count": 1926
+    },
+    {
+      "_id": "Tanger",
+      "count": 1822
+    },
+    {
+      "_id": "Agadir",
+      "count": 1390
+    },
+    {
+      "_id": "Kénitra",
+      "count": 1290
+    },
+    {
+      "_id": "Salé",
+      "count": 1033
+    },
+    {
+      "_id": "Meknès",
+      "count": 1028
+    },
+    {
+      "_id": "Témara",
+      "count": 960
+    },
+    {
+      "_id": "Mohammédia",
+      "count": 804
+    },
+    {
+      "_id": "Oujda",
+      "count": 747
+    },
+    {
+      "_id": "El Jadida",
+      "count": 700
+    },
+    {
+      "_id": "Tétouan",
+      "count": 607
+    },
+    {
+      "_id": "Béni Mellal",
+      "count": 401
+    },
+    {
+      "_id": "Nador",
+      "count": 392
+    },
+    {
+      "_id": "Khouribga",
+      "count": 360
+    },
+    {
+      "_id": "Safi",
+      "count": 356
+    },
+    {
+      "_id": "Berrechid",
+      "count": 340
+    },
+    {
+      "_id": "Settat",
+      "count": 266
+    },
+    {
+      "_id": "Larache",
+      "count": 173
+    },
+    {
+      "_id": "Taza",
+      "count": 163
+    },
+    {
+      "_id": "Taroudant",
+      "count": 145
+    },
+    {
+      "_id": "Laâyoune",
+      "count": 121
+    },
+    {
+      "_id": "Benslimane",
+      "count": 103
+    },
+    {
+      "_id": "Essaouira",
+      "count": 91
+    },
+    {
+      "_id": "Khénifra",
+      "count": 88
+    },
+    {
+      "_id": "Errachidia",
+      "count": 78
+    },
+    {
+      "_id": "Skhiratee",
+      "count": 75
+    },
+    {
+      "_id": "Ouarzazate",
+      "count": 68
+    },
+    {
+      "_id": "Inezgane",
+      "count": 32
+    },
+    {
+      "_id": "Bouskoura",
+      "count": 23
+    },
+    {
+      "_id": "Dar Bouazza",
+      "count": 21
+    },
+    {
+      "_id": "Khémisset",
+      "count": 19
+    },
+    {
+      "_id": "Fkih Ben Salah",
+      "count": 12
+    },
+    {
+      "_id": "Sala Al Jadida",
+      "count": 12
+    },
+    {
+      "_id": "Berkane",
+      "count": 12
+    },
+    {
+      "_id": "Deroua",
+      "count": 11
+    },
+    {
+      "_id": "non renseigné",
+      "count": 11
+    },
+    {
+      "_id": "Azrou",
+      "count": 9
+    },
+    {
+      "_id": "Bouznika",
+      "count": 9
+    },
+    {
+      "_id": "Dakhla",
+      "count": 8
+    },
+    {
+      "_id": "Had Soualem",
+      "count": 7
+    },
+    {
+      "_id": "Ait Melloul",
+      "count": 7
+    },
+    {
+      "_id": "Ben Guerir",
+      "count": 7
+    },
+    {
+      "_id": "Tiznit",
+      "count": 5
+    },
+    {
+      "_id": "Séfrou",
+      "count": 5
+    },
+    {
+      "_id": "Arfoud",
+      "count": 4
+    },
+    {
+      "_id": "Ksar El Kebir",
+      "count": 4
+    },
+    {
+      "_id": "Sidi Kacem",
+      "count": 4
+    },
+    {
+      "_id": "Kalaat Sraghna",
+      "count": 3
+    },
+    {
+      "_id": "Ait Ouabelli Tata",
+      "count": 2
+    },
+    {
+      "_id": "Sidi Slimane",
+      "count": 2
+    },
+    {
+      "_id": "Fquih Ben Salah",
+      "count": 2
+    },
+    {
+      "_id": "Ifrane",
+      "count": 2
+    },
+    {
+      "_id": "Mechra Bel Ksiri",
+      "count": 2
+    },
+    {
+      "_id": "Douala",
+      "count": 2
+    },
+    {
+      "_id": "Aousserd",
+      "count": 1
+    },
+    {
+      "_id": "Attaouia Ech Cheibia",
+      "count": 1
+    },
+    {
+      "_id": "Al Hoceima",
+      "count": 1
+    },
+    {
+      "_id": "Guelmim",
+      "count": 1
+    },
+    {
+      "_id": "Tinghir",
+      "count": 1
+    },
+    {
+      "_id": "Lalla Mimouna",
+      "count": 1
+    },
+    {
+      "_id": "Sidi Abdellah Ghiat",
+      "count": 1
+    },
+    {
+      "_id": "Al Haouz",
+      "count": 1
+    },
+    {
+      "_id": "Jerada",
+      "count": 1
+    },
+    {
+      "_id": "Oulad Teima",
+      "count": 1
+    },
+    {
+      "_id": "Al Kelaa",
+      "count": 1
+    },
+    {
+      "_id": "Souk Sebt",
+      "count": 1
+    },
+    {
+      "_id": "Bab Taza",
+      "count": 1
+    },
+    {
+      "_id": "Médiouna",
+      "count": 1
+    },
+    {
+      "_id": "Youssoufia",
+      "count": 1
+    },
+    {
+      "_id": "Chichaoua",
+      "count": 1
+    }
+  ],
+  "par_statut": [
+    {
+      "_id": "Fictif",
+      "count": 36101
+    },
+    {
+      "_id": "Actif",
+      "count": 2190
+    },
+    {
+      "_id": "Passif",
+      "count": 1192
+    }
+  ],
+  "par_plateforme": [
+    {
+      "_id": "Dabadoc",
+      "count": 19275
+    },
+    {
+      "_id": "Docdialy",
+      "count": 17213
+    },
+    {
+      "_id": "Nabady",
+      "count": 2272
+    },
+    {
+      "_id": "Med",
+      "count": 723
+    }
+  ],
+  "ville_par_plateforme": [
+    {
+      "_id": "Nabady",
+      "nb_villes": 57,
+      "Villes": [
+        "Laâyoune",
+        "Béni Mellal",
+        "Lalla Mimouna",
+        "Larache",
+        "Dakhla",
+        "Al Hoceima",
+        "Ben Guerir",
+        "Marrakech",
+        "Sidi Slimane",
+        "Khénifra",
+        "Errachidia",
+        "Meknès",
+        "Aousserd",
+        "Bouznika",
+        "Bab Taza",
+        "Rabat",
+        "Souk Sebt",
+        "El Jadida",
+        "Inezgane",
+        "Oujda",
+        "Khouribga",
+        "Casablanca",
+        "Ksar El Kebir",
+        "Témara",
+        "Tétouan",
+        "Attaouia Ech Cheibia",
+        "Youssoufia",
+        "Al Haouz",
+        "Had Soualem",
+        "Benslimane",
+        "Bouskoura",
+        "Ait Melloul",
+        "Ifrane",
+        "Settat",
+        "Douala",
+        "Jerada",
+        "Taza",
+        "Essaouira",
+        "Fès",
+        "Azrou",
+        "Skhiratee",
+        "non renseigné",
+        "Kénitra",
+        "Agadir",
+        "Oulad Teima",
+        "Nador",
+        "Berrechid",
+        "Mohammédia",
+        "Fquih Ben Salah",
+        "Taroudant",
+        "Khémisset",
+        "Tinghir",
+        "Sidi Abdellah Ghiat",
+        "Safi",
+        "Tanger",
+        "Chichaoua",
+        "Salé"
+      ]
+    },
+    {
+      "_id": "Dabadoc",
+      "nb_villes": 50,
+      "Villes": [
+        "Dar Bouazza",
+        "Safi",
+        "Had Soualem",
+        "Médiouna",
+        "Ait Melloul",
+        "Salé",
+        "Mechra Bel Ksiri",
+        "Tanger",
+        "Benslimane",
+        "Ouarzazate",
+        "Arfoud",
+        "Séfrou",
+        "Taroudant",
+        "Fkih Ben Salah",
+        "Mohammédia",
+        "Khémisset",
+        "Kénitra",
+        "Agadir",
+        "Berkane",
+        "Skhiratee",
+        "Berrechid",
+        "Nador",
+        "Laâyoune",
+        "Khouribga",
+        "Oujda",
+        "Tétouan",
+        "Kalaat Sraghna",
+        "Témara",
+        "Fès",
+        "Casablanca",
+        "Azrou",
+        "Essaouira",
+        "Inezgane",
+        "Taza",
+        "Khénifra",
+        "El Jadida",
+        "Bouznika",
+        "Meknès",
+        "Rabat",
+        "Deroua",
+        "Larache",
+        "Dakhla",
+        "Béni Mellal",
+        "Ben Guerir",
+        "Marrakech",
+        "Errachidia",
+        "Sala Al Jadida",
+        "Bouskoura",
+        "Sidi Kacem",
+        "Settat"
+      ]
+    },
+    {
+      "_id": "Docdialy",
+      "nb_villes": 49,
+      "Villes": [
+        "Dar Bouazza",
+        "Had Soualem",
+        "Safi",
+        "Laâyoune",
+        "Ait Melloul",
+        "Salé",
+        "Mechra Bel Ksiri",
+        "Tanger",
+        "Benslimane",
+        "Arfoud",
+        "Ouarzazate",
+        "Mohammédia",
+        "Fkih Ben Salah",
+        "Taroudant",
+        "Séfrou",
+        "Khémisset",
+        "Kénitra",
+        "Berkane",
+        "Skhiratee",
+        "Agadir",
+        "Berrechid",
+        "Nador",
+        "Khouribga",
+        "Oujda",
+        "Témara",
+        "Azrou",
+        "Kalaat Sraghna",
+        "Casablanca",
+        "Fès",
+        "Tétouan",
+        "Inezgane",
+        "Taza",
+        "Essaouira",
+        "Khénifra",
+        "El Jadida",
+        "Rabat",
+        "Meknès",
+        "Bouznika",
+        "Larache",
+        "Deroua",
+        "Béni Mellal",
+        "Dakhla",
+        "Ben Guerir",
+        "Marrakech",
+        "Errachidia",
+        "Sala Al Jadida",
+        "Sidi Kacem",
+        "Bouskoura",
+        "Settat"
+      ]
+    },
+    {
+      "_id": "Med",
+      "nb_villes": 28,
+      "Villes": [
+        "Salé",
+        "Casablanca",
+        "Fès",
+        "Laâyoune",
+        "Témara",
+        "Settat",
+        "Oujda",
+        "Tétouan",
+        "Khouribga",
+        "Marrakech",
+        "Berrechid",
+        "Béni Mellal",
+        "Agadir",
+        "Kénitra",
+        "Meknès",
+        "Rabat",
+        "El Jadida",
+        "Guelmim",
+        "Tiznit",
+        "Mohammédia",
+        "Taroudant",
+        "Tanger",
+        "Benslimane",
+        "Al Kelaa",
+        "Ouarzazate",
+        "Ait Ouabelli Tata",
+        "Séfrou",
+        "Safi"
+      ]
+    }
+  ],
+  "specialites_par_plateforme": [
+    {
+      "_id": "Dabadoc",
+      "nbre_spécialités": 44,
+      "Spécialités": [
+        "Ophtalmologie",
+        "Cardiologie",
+        "Orthopédie",
+        "Anesthésiologie",
+        "Médecine Palliative",
+        "Gastro-Entérologie",
+        "Pédiatrie ",
+        "Hématologie",
+        "Obstétrique",
+        "Oncologie",
+        "Médecine Aiguë",
+        "Radiologie ",
+        "Hépatologie",
+        "Oto-Rhino-Laryngologie",
+        "Psychiatrie ",
+        "Gynécologie",
+        "Rhumatologie",
+        "Médecine Nucléaire",
+        "Chirurgie Vasculaire",
+        "Médecine Préventive",
+        "Phd",
+        "Nutrition",
+        "Médecine Interne",
+        "Pharmacie",
+        "Médecine Du Travail",
+        "Biologie Médicale",
+        "Gériatrie",
+        "Médecine Générale",
+        "Néphrologie",
+        "Dermatologie",
+        "Généticien",
+        "Coach Sportif",
+        "Endocrinologie",
+        "Odontologie",
+        "Aneumologie ",
+        "Radiothérapie ",
+        "Chirurgie Maxillo-Faciale",
+        "Anatomopathologie",
+        "Chirurgie",
+        "Neurologie",
+        "Chirugie Esthétique, Plastique Et Reconstructive",
+        "Urologie",
+        "Andrologie",
+        "Médecine Physique"
+      ]
+    },
+    {
+      "_id": "Docdialy",
+      "nbre_spécialités": 43,
+      "Spécialités": [
+        "Ophtalmologie",
+        "Cardiologie",
+        "Anesthésiologie",
+        "Orthopédie",
+        "Médecine Palliative",
+        "Gastro-Entérologie",
+        "Hématologie",
+        "Obstétrique",
+        "Oncologie",
+        "Psychiatrie ",
+        "Radiologie ",
+        "Pédiatrie ",
+        "Hépatologie",
+        "Oto-Rhino-Laryngologie",
+        "Médecine Aiguë",
+        "Médecine Légale",
+        "Gynécologie",
+        "Rhumatologie",
+        "non renseigné",
+        "Médecine Nucléaire",
+        "Chirurgie Vasculaire",
+        "Médecine Préventive",
+        "Nutrition",
+        "Médecine Interne",
+        "Pharmacie",
+        "Médecine Du Travail",
+        "Biologie Médicale",
+        "Gériatrie",
+        "Médecine Générale",
+        "Néphrologie",
+        "Aneumologie ",
+        "Odontologie",
+        "Anatomopathologie",
+        "Dermatologie",
+        "Endocrinologie",
+        "Chirugie Esthétique, Plastique Et Reconstructive",
+        "Radiothérapie ",
+        "Urologie",
+        "Chirurgie Maxillo-Faciale",
+        "Chirurgie",
+        "Neurologie",
+        "Andrologie",
+        "Médecine Physique"
+      ]
+    },
+    {
+      "_id": "Nabady",
+      "nbre_spécialités": 38,
+      "Spécialités": [
+        "Ophtalmologie",
+        "Cardiologie",
+        "Orthopédie",
+        "Anesthésiologie",
+        "Hématologie",
+        "Pédiatrie ",
+        "Gastro-Entérologie",
+        "Psychiatrie ",
+        "Oncologie",
+        "Obstétrique",
+        "Radiologie ",
+        "Médecine Aiguë",
+        "Médecine De Catastrophe",
+        "Oto-Rhino-Laryngologie",
+        "Gynécologie",
+        "Rhumatologie",
+        "Chirurgie Vasculaire",
+        "Médecine Préventive",
+        "Nutrition",
+        "Médecine Interne",
+        "Médecine Du Travail",
+        "Biologie Médicale",
+        "Gériatrie",
+        "Médecine Générale",
+        "Néphrologie",
+        "Dermatologie",
+        "Radiothérapie ",
+        "Odontologie",
+        "Endocrinologie",
+        "Développement Personnel",
+        "Chirugie Esthétique, Plastique Et Reconstructive",
+        "Urologie",
+        "Chirurgie Maxillo-Faciale",
+        "Aneumologie ",
+        "Chirurgie",
+        "Neurologie",
+        "Andrologie",
+        "Médecine Physique"
+      ]
+    },
+    {
+      "_id": "Med",
+      "nbre_spécialités": 31,
+      "Spécialités": [
+        "Cardiologie",
+        "Ophtalmologie",
+        "Orthopédie",
+        "Médecine Douce Et Alternative",
+        "Hématologie",
+        "Pédiatrie ",
+        "Gastro-Entérologie",
+        "Psychiatrie ",
+        "Oncologie",
+        "Radiologie ",
+        "Opticien",
+        "Oto-Rhino-Laryngologie",
+        "Vétérinaire",
+        "Gynécologie",
+        "Rhumatologie",
+        "Médecine Nucléaire",
+        "Nutrition",
+        "Médecine Interne",
+        "Biologie Médicale",
+        "Médecine Générale",
+        "Néphrologie",
+        "Endocrinologie",
+        "Odontologie",
+        "Dermatologie",
+        "Aneumologie ",
+        "Urologie",
+        "Chirugie Esthétique, Plastique Et Reconstructive",
+        "Neurologie",
+        "Infectiologie",
+        "Chirurgie",
+        "Médecine Physique"
+      ]
+    }
+  ],
+  "actifs_par_plateforme": [
+    {
+      "_id": "Dabadoc",
+      "nbre_actifs": 1076
+    },
+    {
+      "_id": "Med",
+      "nbre_actifs": 632
+    },
+    {
+      "_id": "Docdialy",
+      "nbre_actifs": 264
+    },
+    {
+      "_id": "Nabady",
+      "nbre_actifs": 218
+    }
+  ],
+  "passifs_par_plateforme": [
+    {
+      "_id": "Nabady",
+      "nbre_passifs": 1156
+    },
+    {
+      "_id": "Dabadoc",
+      "nbre_passifs": 36
+    }
+  ],
+  "fictifs_par_plateforme": [
+    {
+      "_id": "Dabadoc",
+      "nbre_fictifs": 18163
+    },
+    {
+      "_id": "Docdialy",
+      "nbre_fictifs": 16949
+    },
+    {
+      "_id": "Nabady",
+      "nbre_fictifs": 898
+    },
+    {
+      "_id": "Med",
+      "nbre_fictifs": 91
+    }
+  ]
+}
