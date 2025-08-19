@@ -1514,7 +1514,7 @@ def nettoyer_dataframe_medecinsDabadoc(DataframeMedecins,plateforme):
               .replace("NAN","")
               .replace("none","")
               .str.replace("عربي", "Arabe")
-              .str.replace(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+','', regex=True))
+              )
     
     Nouvel_Order=["ID Medecin","Statut","Prénom","Nom","Spécialité","Ville","Téléphone","Langues Parlées"]
     df1=df1[Nouvel_Order]
@@ -1712,113 +1712,234 @@ def attribuer_ids_df_hash_simple(df, db, collection_name="collection_globale"):
 
     return df_out, maps
 ##########------------Code de detetion des elements présents,absents et modifiés-------#####################
-def detecter_changement_par_plateforme():
-    client=MongoClient("mongodb+srv://Sal123:uyoige58@cluster0.vd6q5oj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-    db=client["BaseMedicale"]
-    collection=db["collection_globale"]
-    changelog=db["changements_collection_globale"]
-    dates=sorted(collection.distinct("Date Extraction"))
-    if len(dates)<2:
+from pymongo import MongoClient
+from datetime import datetime
+from ConnexionMongo_DB import get_db
+import pandas as pd
+
+def detecter_changement_par_plateforme(db=None):
+    if db is None:
+        db = get_db()
+    collection = db["collection_globale"]
+
+    # 1) Récupérer les 2 dernières dates
+    dates = sorted(collection.distinct("Date Extraction"))
+    if len(dates) < 2:
         print("Pas assez de versions pour comparaison.")
-        return pd.DataFrame([])
-    date_old=dates[-2]
-    date_new=dates[-1]
-    print(f"Comparaison entre {date_old} et {date_new}")    
-    plateformes=collection.distinct("Plateforme")
-    for plateforme in plateformes:
-        print(f"Traitement de la plateforme: {plateforme}")
-        #Récupérer les docs pour chaque plateforme:
-        docs_old=list(collection.find({"Date Extraction":date_old,"Plateforme":plateforme}))
-        docs_new=list(collection.find({"Date Extraction":date_new,"Plateforme":plateforme}))
-        #Créer un dictionnaire avec un ID Medecin comme clé:
-        def statut_norm(doc):
-            s = doc.get("Statut","")
-            if isinstance(s, dict):
-                s = s.get("libelle") or ""
-            return str(s).strip().lower()
+        return pd.DataFrame()
 
-        allowed = {"actif", "passif"}
+    date_old, date_new = dates[-2], dates[-1]
+    print(f"Comparaison entre {date_old} et {date_new}")
 
-        old_by_id = {
-    doc["ID Medecin"]: doc
-    for doc in docs_old
-    if "ID Medecin" in doc and statut_norm(doc) in allowed
+    # 2) Récupérer les plateformes PAR ID (évite les dicts non hashables)
+    plateformes_ids = collection.distinct("Plateforme.id")
+
+    stats = {}
+
+    for pf_id in plateformes_ids:
+        # Récupérer un libellé pour l’affichage (facultatif mais pratique)
+        pf_doc = collection.find_one({"Plateforme.id": pf_id}, {"Plateforme.libelle": 1})
+        pf_lib = (pf_doc or {}).get("Plateforme", {}).get("libelle", str(pf_id))
+
+        print(f"Traitement de la plateforme: {pf_lib} ({pf_id})")
+
+        # 3) Filtrer uniquement Actif/Passif (exclure les fictifs)
+        statut_filtre = {"$in": ["Actif", "Passif"]}
+
+        # 4) Charger vieux/nouveau snapshot pour cette plateforme
+        docs_old = list(collection.find(
+            {"Date Extraction": date_old, "Plateforme.id": pf_id, "Statut": statut_filtre},
+            {"_id": 0}
+        ))
+        docs_new = list(collection.find(
+            {"Date Extraction": date_new, "Plateforme.id": pf_id, "Statut": statut_filtre},
+            {"_id": 0}
+        ))
+
+        # 5) Définir une clé stable d’identification de médecin
+        #    Adapte 'Medecin_id' au vrai champ unique que TU utilises.
+        def key(doc):
+            return (
+                doc.get("Medecin_id")
+                or doc.get("Profil_id")
+                or (doc.get("Nom"), doc.get("Prénom"), doc.get("Ville"), doc.get("Spécialité"))
+            )
+
+        old_keys = {key(d) for d in docs_old}
+        new_keys = {key(d) for d in docs_new}
+
+        ajoutes_keys   = new_keys - old_keys
+        supprimes_keys = old_keys - new_keys
+        communs_keys   = new_keys & old_keys
+
+        # 6) Détection des modifiés (sur les communs) — optionnel selon ton besoin
+        #    Ici on compare un sous-ensemble de champs
+        champs_a_verifier = ["Statut", "Téléphone", "Adresse", "Spécialité", "Ville"]
+        old_index = {key(d): d for d in docs_old}
+        new_index = {key(d): d for d in docs_new}
+
+        modifies_keys = set()
+        for k in communs_keys:
+            o, n = old_index[k], new_index[k]
+            if any((o.get(ch) != n.get(ch)) for ch in champs_a_verifier):
+                modifies_keys.add(k)
+
+        # 7) Ranger les chiffres avec une clé HASHABLE : pf_id (string)
+        stats[pf_id] = {
+            "plateforme_libelle": pf_lib,
+            "date_old": date_old,
+            "date_new": date_new,
+            "ajoutes": len(ajoutes_keys),
+            "supprimes": len(supprimes_keys),
+            "modifies": len(modifies_keys),
+            # si tu veux les listes :
+            # "ajoutes_list": list(ajoutes_keys),
+            # "supprimes_list": list(supprimes_keys),
+            # "modifies_list": list(modifies_keys),
         }
 
+    # 8) Convertir en DataFrame si tu en as besoin (ou retourne le dict)
+    df_stats = pd.DataFrame.from_dict(stats, orient="index").reset_index().rename(columns={"index": "Plateforme_id"})
+    return df_stats
+
+#####
+ 
+def detecter_changement_par_plateforme():
+    # 1) Dates
+    client = MongoClient("mongodb+srv://Sal123:AZEQSDAZEQSD@cluster0.vd6q5oj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")   # <-- ta connexion
+    db = client["BaseMedicale"]        # <-- ta base
+    collection = db["collection_globale"]   # <-- ta collection
+    changelog = db["changements_collection_globale"]
+    dates = sorted(collection.distinct("Date Extraction"))
+    if len(dates) < 2:
+        print("Pas assez de versions pour comparaison.")
+        return {
+            "totaux": {"ajouts": 0, "suppressions": 0, "modifications": 0},
+            "par_plateforme": {},
+            "periode": None
+        }
+
+    date_old, date_new = dates[-2], dates[-1]
+    print(f"Comparaison entre {date_old} et {date_new}")
+
+    # 2) Helpers
+    def statut_norm(doc):
+        s = doc.get("Statut", "")
+        if isinstance(s, dict):
+            s = s.get("libelle") or ""
+        return str(s).strip().lower()
+
+    allowed = {"actif", "passif"}  # on exclut "fictif"
+
+    # 3) Boucle plateformes (par ID)
+    plateformes_ids = collection.distinct("Plateforme.id")
+    stats = {}  # {pf_id: {"Ajouts": n, "Suppressions": n, "Modifications": n, "libelle": str}}
+    tot_aj, tot_sup, tot_mod = 0, 0, 0
+    date_interrogation = datetime.now()
+    
+    for pf_id in plateformes_ids:
+        # récupérer 1 libellé pour logs/retour
+        pf_doc = collection.find_one({"Plateforme.id": pf_id}, {"Plateforme.libelle": 1})
+        pf_lib = (pf_doc or {}).get("Plateforme", {}).get("libelle", str(pf_id))
+
+        print(f"Traitement de la plateforme: {pf_lib} ({pf_id})")
+
+        docs_old = list(collection.find({"Date Extraction": date_old, "Plateforme.id": pf_id}))
+        docs_new = list(collection.find({"Date Extraction": date_new, "Plateforme.id": pf_id}))
+
+        old_by_id = {
+            d["ID Medecin"]: d
+            for d in docs_old
+            if "ID Medecin" in d and statut_norm(d) in allowed
+        }
         new_by_id = {
-    doc["ID Medecin"]: doc
-    for doc in docs_new
-    if "ID Medecin" in doc and statut_norm(doc) in allowed
+            d["ID Medecin"]: d
+            for d in docs_new
+            if "ID Medecin" in d and statut_norm(d) in allowed
+        }
+
+        ids_old = set(old_by_id)
+        ids_new = set(new_by_id)
+
+        ids_ajoutes   = ids_new - ids_old
+        ids_supprimes = ids_old - ids_new
+        ids_communs   = ids_old & ids_new
+
+        # --- Ajouts ---
+        for _id in ids_ajoutes:
+            changelog.insert_one({
+                "type": "ajout",
+                "ID Medecin": _id,
+                "plateforme": {"id": pf_id, "libelle": pf_lib},
+                "nouveau": new_by_id[_id],
+                "date_interrogation": date_interrogation,
+                "date_extraction_old": date_old,
+                "date_extraction_new": date_new
+            })
+
+        # --- Suppressions ---
+        for _id in ids_supprimes:
+            changelog.insert_one({
+                "type": "suppression",
+                "ID Medecin": _id,
+                "plateforme": {"id": pf_id, "libelle": pf_lib},
+                "ancien": old_by_id[_id],
+                "date_interrogation": date_interrogation,
+                "date_extraction_old": date_old,
+                "date_extraction_new": date_new
+            })
+
+        # --- Modifications ---
+        champs_a_verifier = [
+            "ID Medecin","Statut","Prénom","Nom","Sexe","Spécialité","Ville","Téléphone",
+            "Fix","WhatsApp","Email","Date de Naissance","Langues Parlées","Duree",
+            "Date de Connexion","Plateforme"
+        ]
+        nb_modifies = 0
+        for _id in ids_communs:
+            old_doc = old_by_id[_id]
+            new_doc = new_by_id[_id]
+            differences = {}
+            for champ in champs_a_verifier:
+                if old_doc.get(champ) != new_doc.get(champ):
+                    differences[champ] = {"avant": old_doc.get(champ), "apres": new_doc.get(champ)}
+            if differences:
+                nb_modifies += 1
+                changelog.insert_one({
+                    "type": "modification",
+                    "ID Medecin": _id,
+                    "plateforme": {"id": pf_id, "libelle": pf_lib},
+                    "modifications": differences,
+                    "date_interrogation": date_interrogation,
+                    "date_extraction_old": date_old,
+                    "date_extraction_new": date_new
+                })
+
+        # --- Comptage plateforme + totaux ---
+        stats[pf_id] = {
+            "libelle": pf_lib,
+            "Ajouts": len(ids_ajoutes),
+            "Suppressions": len(ids_supprimes),
+            "Modifications": nb_modifies
+        }
+        tot_aj  += len(ids_ajoutes)
+        tot_sup += len(ids_supprimes)
+        tot_mod += nb_modifies
+
+        print(f"Plateforme: {pf_lib} - Ajouts: {stats[pf_id]['Ajouts']} "
+              f"- Suppressions: {stats[pf_id]['Suppressions']} "
+              f"- Modifications: {stats[pf_id]['Modifications']}")
+
+    # 4) Retour
+    return {
+        "totaux": {
+            "ajouts": tot_aj,
+            "suppressions": tot_sup,
+            "modifications": tot_mod
+        },
+        "par_plateforme": stats,  # clés = IDs; valeur contient le libellé
+        "periode": {"old": date_old, "new": date_new}
     }
 
-        #Detection des changements d'ID:
-        ids_old=set(old_by_id.keys())
-        ids_new=set(new_by_id.keys())
-        #Determinons les ids:
-        ids_ajoutes=ids_new-ids_old
-        ids_supprimes=ids_old-ids_new
-        ids_communs=ids_old & ids_new
-        date_interrogation= datetime.now()
-        ##+++++Ajouts
-        for id in ids_ajoutes:
-            changelog.insert_one({
-                "type":"ajout",
-                "ID Medecin":id,
-                "plateforme":plateforme,
-                "nouveau":new_by_id[id],
-                "date_interrogation":date_interrogation,
-                "date_extraction_old":date_old,
-                "date_extraction_new":date_new
-            })
-        ##-----Supprimes
-        for id in ids_supprimes:
-            changelog.insert_one({
-                "oltype":"suppression",
-                "ID Medecin":id,
-                "plateforme":plateforme,
-                "ancien":old_by_id[id],
-                "date_interrogation":date_interrogation,
-                "date_extraction_old":date_old,
-                "date_extraction_new":date_new 
-            })
-        ## Champs à modifier
-        champs_a_verifier=["ID Medecin","Statut","Prénom","Nom","Sexe","Spécialité","Ville","Téléphone","Fix","WhatsApp","Email","Date de Naissance","Langues Parlées","Duree","Date de Connexion","Plateforme"]
-        for id in ids_communs:
-            old_doc=old_by_id[id]
-            new_doc=new_by_id[id]
-            differences={}
-            for champ in champs_a_verifier:
-                if old_doc.get(champ)!=new_doc.get(champ):
-                    differences[champ]={
-                        "avant":old_doc.get(champ),
-                        "aprés":new_doc.get(champ)
-                    }
-            if differences:
-                changelog.insert_one({
-                    "type":"modification",
-                    "ID Medecin":id,
-                    "plateforme":plateforme,
-                    "modifications":differences,
-                    "date_interrogation":date_interrogation,
-                    "date_extraction_old":date_old,
-                    "date_extraction_new":date_new
-                })
-        print(f"Plateforme: {plateforme} -Ajoutes: {len(ids_ajoutes)} -Supprimes : {len(ids_supprimes)} -Modifies : {sum(1 for id in ids_communs if any(old_by_id[id].get(champ)!=new_by_id[id].get(champ) for champ in champs_a_verifier)) }")
-    changelog=client["collection_globale"]["changement_collection_globale"]
-    changements=list(changelog.find({}))
-    stats={}
-    for ch in changements:
-        plateforme=ch.get("Plateforme","")
-        type_changement=ch.get("type","")
-        if plateforme not in stats:
-            stats[plateforme]={"Ajouts":0,"Suppressions":0,"Modifications":0}
-        if type_changement=="ajout":
-            stats[plateforme]["Ajouts"]+=1
-        elif type_changement=="suppression":
-            stats[plateforme]["Suppressions"]+=1
-        elif type_changement=="modification":
-            stats[plateforme]["Modifications"]+=1
-    df_detecter_presence_absence=pd.DataFrame.from_dict(stats,orient="index").reset_index()
-    df_detecter_presence_absence=df_detecter_presence_absence.rename(columns={"index":"Plateforme"})
-    print("Félicitations la comparaison est terminée entre les deux versions!!!!")
-    return df_detecter_presence_absence
+
+##################################################################
