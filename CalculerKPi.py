@@ -12,116 +12,123 @@ client=MongoClient(uri)
 collection = client["BaseMedicale"]["collection_globale"]
 
 # ----------------------------- ROUTE UNIQUE -----------------------------
+#plateforme_id = request.args.get("plateforme_id")
+#ville_id      = request.args.get("ville_id")
+#specialite_id = request.args.get("specialite_id")
+#statut        = request.args.get("statut")   # "Actif" / "Passif" / "Fictif"
+
 
 def get_kpi():
+    
     # --- Dates à comparer (2 dernières) ---
     dates = sorted(collection.distinct("Date Extraction"))
     if len(dates) < 2:
         return "error Pas assez de versions", 400
-    date_old, date_new = dates[-2], dates[-1]
+    date_new = max(dates)
 
     # --- Métriques de base (à la dernière extraction) ---
     date_extraction = date_new
+    match = {"Date Extraction": date_extraction}
+    #if plateforme_id:
+    #    match["Plateforme.id"] = plateforme_id
+    #if ville_id:
+    #    match["Ville.id"] = ville_id
+    #if specialite_id:
+    #   match["Spécialité.id"] = specialite_id
+    #if statut:
+    #   match["$or"] = [ {"Statut.libelle": statut}, {"Statut": statut} ]
     total = collection.count_documents({"Date Extraction": date_extraction})
 
     total_spécialités = list(collection.aggregate([
         {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": "$Spécialité.libelle"}},
+        {"$group": {"_id": "$Spécialité.id"}},
         {"$count": "nbre_spécialités"}
     ]))
-
+    
     total_villes = list(collection.aggregate([
         {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": "$Ville.libelle"}},
+        {"$group": {"_id": "$Ville.id"}},
         {"$count": "nbre_villes"}
     ]))
 
     medecins_par_ville = list(collection.aggregate([
+        #{"$match": match},
         {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": "$Ville.libelle", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}}
+        {"$group": {"_id": "$Ville.id","libelle": {"$first": "$Ville.libelle"}, "nbre_medecins_villes": {"$sum": 1}}}, 
+        {"$sort": {"nbre_medecins_villes": -1}}
     ]))
     df_medecins_par_ville = pd.DataFrame(medecins_par_ville)
 
     medecins_par_specialite = list(collection.aggregate([
+        #{"$match": match},
         {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": "$Spécialité.libelle", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}}
+        {"$group": {"_id": "$Spécialité.id","libelle": {"$first": "$Ville.libelle"}, "nbre_medecins_specialites": {"$sum": 1}}},
+        {"$sort": {"nbre_medecins_specialites": -1}}
     ]))
-    df_medecins_par_specialite = pd.DataFrame(medecins_par_specialite).rename(
-        columns={"_id": "Spécialité", "count": "nombre_medecins"}
-    )
+    df_medecins_par_specialite = pd.DataFrame(medecins_par_specialite)
 
     medecins_par_statut = list(collection.aggregate([
+        #{"$match": match},
         {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": "$Statut.libelle", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}}
+        {"$group": {"_id": "$Statut.id","libelle": {"$first": "$Statut.libelle"},"nbre_medecins_statut": {"$sum": 1}}},
+        {"$sort": {"nbre_medecins_statut": -1}}
     ]))
-    df_medecins_par_statut = pd.DataFrame(medecins_par_statut).rename(
-        columns={"_id": "Statut", "count": "nombre_medecins"}
-    )
+    df_medecins_par_statut = pd.DataFrame(medecins_par_statut)
 
     medecins_par_plateforme = list(collection.aggregate([
-        {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": "$Plateforme.libelle", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}}
+        #{"$match": match},
+         {"$match": {"Date Extraction": date_extraction}},
+        {"$group": {"_id": "$Plateforme.id","libelle": {"$first":"$Plateforme.libelle"},"nbre_medecins_plateforme": {"$sum": 1}}},
+        {"$sort": {"nbre_medecins_plateforme": -1}}
     ]))
-    df_medecins_par_plateforme = pd.DataFrame(medecins_par_plateforme).rename(
-        columns={"_id": "Plateforme", "count": "nombre_medecins"}
-    )
+    df_medecins_par_plateforme = pd.DataFrame(medecins_par_plateforme)
 
     ville_par_plateforme = list(collection.aggregate([
-        {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": {"Plateforme": "$Plateforme.libelle", "Ville": "$Ville.libelle"}}},
-        {"$group": {"_id": "$_id.Plateforme", "nb_villes": {"$sum": 1},
+        #{"$match": match},
+         {"$match": {"Date Extraction": date_extraction}},
+        {"$group": {"_id": {"plateforme_id": "$Plateforme.id","plateforme_libelle":"$Plateforme.libelle", "Ville": "$Ville.libelle"}}},
+        {"$group": {"_id": "$_id.plateforme_id","libelle": {"$first":"$_id.plateforme_libelle"}, "nbre_villes_plateforme": {"$sum": 1},
                     "Villes": {"$addToSet": "$_id.Ville"}}},
-        {"$sort": {"nb_villes": -1}}
+        {"$sort": {"nbre_villes_plateforme": -1}}
     ]))
-    df_ville_par_plateforme = pd.DataFrame(ville_par_plateforme).rename(
-        columns={"_id": "Plateforme", "count": "NbrVilles"}
-    )
+    df_ville_par_plateforme = pd.DataFrame(ville_par_plateforme)
 
     specialite_par_plateforme = list(collection.aggregate([
+        #{"$match": match},
         {"$match": {"Date Extraction": date_extraction}},
-        {"$group": {"_id": {"Plateforme": "$Plateforme.libelle", "Spécialité": "$Spécialité.libelle"}}},
-        {"$group": {"_id": "$_id.Plateforme", "nbre_spécialités": {"$sum": 1},
+        {"$group": {"_id": {"plateforme_id": "$Plateforme.id","plateforme_libelle":"$Plateforme.libelle", "Spécialité": "$Spécialité.libelle"}}},
+        {"$group": {"_id": "$_id.plateforme_id","libelle": {"$first":"$_id.plateforme_libelle"}, "nbre_spécialités_plateforme": {"$sum": 1},
                     "Spécialités": {"$addToSet": "$_id.Spécialité"}}},
-        {"$sort": {"nbre_spécialités": -1}}
+        {"$sort": {"nbre_spécialités_plateforme": -1}}
     ]))
-    df_specialite_par_plateforme = pd.DataFrame(specialite_par_plateforme).rename(
-        columns={"_id": "Plateforme", "count": "NbrSpécialités"}
-    )
+    df_specialite_par_plateforme = pd.DataFrame(specialite_par_plateforme)
 
     actifs_par_plateforme = list(collection.aggregate([
+         #{"$match": match},
         {"$match": {"Date Extraction": date_extraction}},
         {"$match": {"Statut.libelle": "Actif"}},
-        {"$group": {"_id": "$Plateforme.libelle", "nbre_actifs": {"$sum": 1}}},
-        {"$sort": {"nbre_actifs": -1}}
+        {"$group": {"_id": "$Plateforme.id", "libelle": {"$first":"$Plateforme.libelle"},"nbre_actifs_plateforme": {"$sum": 1}}},
+        {"$sort": {"actifs_plateforme": -1}}
     ]))
-    df_actifs_par_plateforme = pd.DataFrame(actifs_par_plateforme).rename(
-        columns={"_id": "Plateforme", "count": "NbrActifs"}
-    )
+    df_actifs_par_plateforme = pd.DataFrame(actifs_par_plateforme)
 
     passifs_par_plateforme = list(collection.aggregate([
+        #{"$match": match},
         {"$match": {"Date Extraction": date_extraction}},
         {"$match": {"Statut.libelle": "Passif"}},
-        {"$group": {"_id": "$Plateforme.libelle", "nbre_passifs": {"$sum": 1}}},
-        {"$sort": {"nbre_passifs": -1}}
+        {"$group": {"_id": "$Plateforme.id","libelle": {"$first":"$Plateforme.libelle"},"nbre_passifs_plateforme": {"$sum": 1}}},
+        {"$sort": {"nbre_passifs_plateforme": -1}}
     ]))
-    df_passifs_par_plateforme = pd.DataFrame(passifs_par_plateforme).rename(
-        columns={"_id": "Plateforme", "nbre_passifs": "NbrPassifs"}
-    )
+    df_passifs_par_plateforme = pd.DataFrame(passifs_par_plateforme)
 
     fictifs_par_plateforme = list(collection.aggregate([
+        #{"$match": match},
         {"$match": {"Date Extraction": date_extraction}},
         {"$match": {"Statut.libelle": "Fictif"}},
-        {"$group": {"_id": "$Plateforme.libelle", "nbre_fictifs": {"$sum": 1}}},
-        {"$sort": {"nbre_fictifs": -1}}
+        {"$group": {"_id": "$Plateforme.id","libelle": {"$first":"$Plateforme.libelle"}, "nbre_fictifs_plateforme": {"$sum": 1}}},
+        {"$sort": {"nbre_fictifs_plateforme": -1}}
     ]))
-    df_fictifs_par_plateforme = pd.DataFrame(fictifs_par_plateforme).rename(
-        columns={"_id": "Plateforme", "count": "Nbrfictifs"}
-    )
-
+    df_fictifs_par_plateforme = pd.DataFrame(fictifs_par_plateforme)
     # ----------------------- KPI Ajouts / Suppressions / Modifs -----------------------
     res = detecter_changement_par_plateforme()
     #Le total des elements ajoutés-supprimés-modifiés dans les 4 plateformes
