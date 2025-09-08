@@ -1,11 +1,21 @@
-import requests,time,json, pandas as pd,re
+import requests,time,json, pandas as pd
 from datetime import datetime,timedelta,timezone
 from bs4 import BeautifulSoup
+import re
 from urllib.parse import urljoin
 from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
-import os
 import hashlib, unicodedata, numpy as np
+from pymongo import MongoClient
+from ConnexionMongo_DB_ import get_db
+from dotenv import load_dotenv
+import os
+
+# Charger le fichier .env
+load_dotenv()
+job_name="scrape_all_minimal"
+MONGO_URI = os.getenv("MONGO_URI")
+MONGO_DB = os.getenv("MONGO_DB")
 ################---------------------Fichier Med---------------###############################
 def get_medecinsMed():
     session = requests.Session()
@@ -130,12 +140,12 @@ def get_medecinsMed():
                         qualification = p_tagQ.get_text(separator=' ', strip=True)
                         
                     #  Langues parlées
-                    langues_=""
-                    langues_h3 = soup_profil.find("h3", string=lambda t: t and "Langues parlées" in t)
-                    if langues_h3:
-                        div_langues= langues_h3.find_next_sibling("div")
-                        if div_langues:
-                            langues_ = div_langues.get_text(separator=", ", strip=True)
+                    #langues_=""
+                    #langues_h3 = soup_profil.find("h3", string=lambda t: t and "Langues parlées" in t)
+                    #if langues_h3:
+                    #    div_langues= langues_h3.find_next_sibling("div")
+                    #    if div_langues:
+                    #        langues_ = div_langues.get_text(separator=", ", strip=True)
                 except Exception as e:
                     print(f" Erreur accès profil {profil_url} : {e}")
         
@@ -153,11 +163,11 @@ def get_medecinsMed():
                 "WhatsApp": whatsapp,
                 "Statut": statut,
                 "Lien Profil":profil_url,
-                "Langues Parlées":langues_,
+                #"Langues Parlées":langues_,
                 "Diplomes et Formations":qualification
                 
             })
-            print(profil_url,langues_,qualification)
+            print(profil_url,qualification)
         if len(blocs) < step:
             print(" Dernière page atteinte. Fin de l'extraction.")
             break
@@ -165,7 +175,7 @@ def get_medecinsMed():
         start += step
         time.sleep(1)
     dfMed = pd.DataFrame(all_data)
-    dfMed.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Med_ma_Avant_Nettoyage.xlsx",index=False)
+    #dfMed.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Med_ma_Avant_Nettoyage.xlsx",index=False)
     print(f"\n Extraction terminée. Nombre total de médecins : {len(dfMed)}")
     return dfMed
 def get_medecinsMed_actifs_passifs():
@@ -290,13 +300,13 @@ def get_medecinsMed_actifs_passifs():
                     if p_tagQ:
                         qualification = p_tagQ.get_text(separator=' ', strip=True)
                         
-                    #  Langues parlées
-                    langues_=""
-                    langues_h3 = soup_profil.find("h3", string=lambda t: t and "Langues parlées" in t)
-                    if langues_h3:
-                        div_langues= langues_h3.find_next_sibling("div")
-                        if div_langues:
-                            langues_ = div_langues.get_text(separator=", ", strip=True)
+                    #Langues parlées
+                    #langues_=""
+                    #langues_h3 = soup_profil.find("h3", string=lambda t: t and "Langues parlées" in t)
+                    #if langues_h3:
+                    #    div_langues= langues_h3.find_next_sibling("div")
+                    #    if div_langues:
+                    #        langues_ = div_langues.get_text(separator=", ", strip=True)
                 except Exception as e:
                     print(f" Erreur accès profil {profil_url} : {e}")
             if statut in ["Actif","Passif"]:
@@ -311,11 +321,11 @@ def get_medecinsMed_actifs_passifs():
                     "WhatsApp": whatsapp,
                     "Statut": statut,
                     "Lien Profil":profil_url,
-                    "Langues Parlées":langues_,
+                    #"Langues Parlées":langues_,
                     "Diplomes et Formations":qualification
                     
             })
-                print(profil_url,langues_,qualification)
+                print(profil_url,qualification)
         if len(blocs) < step:
             print(" Dernière page atteinte. Fin de l'extraction.")
             break
@@ -323,7 +333,7 @@ def get_medecinsMed_actifs_passifs():
         start += step
         time.sleep(1)
     dfMed = pd.DataFrame(all_data)
-    dfMed.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Med_ma_Avant_Nettoyage.xlsx",index=False)
+    #dfMed.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Med_ma_Avant_Nettoyage.xlsx",index=False)
     print(f"\n Extraction terminée. Nombre total de médecins : {len(dfMed)}")
     return dfMed
 #################---------------------Fichier Nabady------------###########################
@@ -338,7 +348,7 @@ def get_medecinsNabady():
     "pragma": "no-cache",
     "referer": "https://nabady.ma/",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-}
+ }
     page=1
     total=0
     limite=datetime.now(timezone.utc)-timedelta(days=45)
@@ -353,9 +363,9 @@ def get_medecinsNabady():
     "isIframe":False,
     "referrer":"",
     "domain":"ma"
-}
+ }
     while True:
-        print(f"Traitement de la page : {page}")
+       # print(f"Traitement de la page : {page}")
         payload['page']=page  
         response=requests.post(url,headers=headers,json=payload,timeout=10)
         if response.status_code!=200:
@@ -454,7 +464,7 @@ def get_medecinsNabady():
         page+=1  
     dfNabady=pd.DataFrame(all_Medecins)
     
-    dfNabady.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Nabady_ma_Avant_Nettoyage.xlsx",index=False)
+    #dfNabady.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Nabady_ma_Avant_Nettoyage.xlsx",index=False)
     return dfNabady
 def get_medecinsNabady_actifs_passifs():
     url = "https://api.nabady.ma/api/praticien_centre_soins/medecin/search"
@@ -467,7 +477,7 @@ def get_medecinsNabady_actifs_passifs():
     "pragma": "no-cache",
     "referer": "https://nabady.ma/",
     "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36",
-}
+                }
     page=1
     total=0
     limite=datetime.now(timezone.utc)-timedelta(days=45)
@@ -482,7 +492,7 @@ def get_medecinsNabady_actifs_passifs():
     "isIframe":False,
     "referrer":"",
     "domain":"ma"
-}
+ }
     while True:
         print(f"Traitement de la page : {page}")
         payload['page']=page  
@@ -583,7 +593,7 @@ def get_medecinsNabady_actifs_passifs():
         page+=1  
     dfNabady=pd.DataFrame(all_Medecins)
     
-    dfNabady.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Nabady_ma_Avant_Nettoyage.xlsx",index=False)
+    #dfNabady.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_Nabady_ma_Avant_Nettoyage.xlsx",index=False)
     return dfNabady
 ##################------------------Fichier Dabadoc------------############################
 def get_medecinsDabadoc():
@@ -968,7 +978,7 @@ def get_medecinsDocdialy():
             print("A","|",adresse,"|",specialites,"|",label_actes,"|",label_certificats,"|",label_langues,"|",data_presentation)
                 
         dfDocdialy=pd.DataFrame(all_medecins)
-        dfDocdialy.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_DocDialy_ma_Avant_Nettoyage.xlsx",index=False)        
+        #dfDocdialy.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_DocDialy_ma_Avant_Nettoyage.xlsx",index=False)        
                 
         payload['page']+=1
         time.sleep(1)       
@@ -993,7 +1003,7 @@ def get_medecinsDocdialy_actifs_passifs():
         "sec-fetch-mode": "cors",
         "sec-fetch-site": "same-site",
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
-    }
+     }
 
     payload = {
         "doctor": "",
@@ -1107,7 +1117,7 @@ def get_medecinsDocdialy_actifs_passifs():
                 print("A","|",adresse,"|",specialites,"|",label_actes,"|",label_certificats,"|",label_langues,"|",data_presentation)
                 
         dfDocdialy=pd.DataFrame(all_medecins)
-        dfDocdialy.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_DocDialy_ma_Avant_Nettoyage.xlsx",index=False)        
+        #dfDocdialy.to_excel(r"C:\Users\HP\Desktop\Data_Folder\Fichier_DocDialy_ma_Avant_Nettoyage.xlsx",index=False)        
                 
         payload['page']+=1
         time.sleep(1)       
@@ -1255,7 +1265,8 @@ def nettoyer_dataframe_medecins(DataframeMedecins,plateforme):
         "Chirurgie cardiaque": [
             "chirurgie cardio", "chirurgie cardio-vasculaire"
         ],
-        "Chirugie esthétique, plastique et reconstructive": [
+        #PR:plastique et reconstructive
+        "Chirugie esthétique PR": [
             "chirurgie esthétique", "chirurgie plastique", "chirurgie réparatrice","médecin esthétique",
             "chirurgie plastique, reconstructrice et esthétique","médecine esthétique","médecine au laser"
         ],
@@ -1503,36 +1514,35 @@ def nettoyer_dataframe_medecinsDabadoc(DataframeMedecins,plateforme):
     #--------------------------Extraire le dernier Tiret Pour Avoir uniquement le ID sous forme d'un nombre sans serach -----------------------------
     df1["ID Medecin"] = df1["ID Medecin"].str.rsplit("-", n=1).str[-1]
  
-#-------------------------------------------------------------------------------------------------------------
+    #-------------------------------------------------------------------------------------------------------------
     ListString=["ID Medecin","Statut","Civilité","Nom","Prénom"]
     for col in ListString:
-        df1[col]=(df1[col].
-              astype(str)
+              df1[col]=(df1[col].astype(str)
               .str.replace("-"," ")
               .replace("nan","")
               .replace("Nan","")
               .replace("NAN","")
               .replace("none","")
               .str.replace("عربي", "Arabe")
-              )
+                )
     
     Nouvel_Order=["ID Medecin","Statut","Prénom","Nom","Spécialité","Ville","Téléphone","Langues Parlées"]
     df1=df1[Nouvel_Order]
-    df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestDabadoc.xlsx",index=False)
+    #df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestDabadoc.xlsx",index=False)
     
     return df1
 #############----------------------Fichier Med Nettoyage----------#####################
 def nettoyer_dataframe_medecinsMed(DataframeMedecins,plateforme):
     df1=DataframeMedecins
 
-# --------------------------------------------Organiser Columns---------------------------------------
+    # --------------------------------------------Organiser Columns---------------------------------------
     Columns=["ID Medecin","Statut","Civilité","Nom Complet","Téléphone","WhatsApp"]
 
     for col in Columns:
         df1[col]=df1[col].astype(str).str.replace("nan","").str.replace("None","").str.replace("none","").str.replace("Nan","").str.replace(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+','', regex=True).str.replace(r"[<>]","",regex=True)
-    NouvelOrder=["ID Medecin","Statut","Civilité","Prénom","Nom","Spécialité","Ville","Téléphone","WhatsApp","Langues Parlées"]
+    NouvelOrder=["ID Medecin","Statut","Civilité","Prénom","Nom","Spécialité","Ville","Téléphone","WhatsApp"]
     df1=df1[NouvelOrder]
-    df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestMed.xlsx",index=False)
+    #df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestMed.xlsx",index=False)
     return df1
 #############----------------------Fichier Docdialy Nettoyage----------#####################
 def nettoyer_dataframe_medecinsDocdialy(DataframeMedecins,plateforme):
@@ -1547,7 +1557,7 @@ def nettoyer_dataframe_medecinsDocdialy(DataframeMedecins,plateforme):
     Nouvel_ordre = [
         "ID Medecin","Statut","Civilité","Prénom","Nom","Spécialité","Ville","Téléphone","Email"]
     df1=df1[Nouvel_ordre]
-    df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestDocdialy.xlsx",index=False)
+    #df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestDocdialy.xlsx",index=False)
     return df1
 #############----------------------Fichier Nabady Nettoyage----------#####################   
 def nettoyer_dataframe_medecinsNabady(DataframeMedecins,plateforme):
@@ -1567,7 +1577,7 @@ def nettoyer_dataframe_medecinsNabady(DataframeMedecins,plateforme):
         df1[col]=df1[col].astype(str).str.replace(r'[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+','', regex=True).str.replace("none","").str.replace("Nan","").str.replace("nan","").str.replace(r"[-<>]","",regex=True)
     order_columns=["ID Medecin","Statut","Civilité","Prénom","Nom","Sexe","Spécialité","Ville","Téléphone","Fix","Email","Date de Naissance","Langues Parlées","Photo URL","Duree","Date de Connexion"]
     df1=df1[order_columns]
-    df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestNabady.xlsx",index=False)
+    #df1.to_excel(r"C:\Users\HP\Desktop\Data_Folder\TestNabady.xlsx",index=False)
     ListeMedecinsNettoyée=df1
     return ListeMedecinsNettoyée
 ###############Lancer la methode de Scrapping de dabadoc en filtrant les statuts #######
@@ -1626,7 +1636,7 @@ def lancer_scrapping_nabady():
         df=get_medecinsNabady_actifs_passifs()
         df=nettoyer_dataframe_medecins(df,"Nabady")
     return df
- ###########----------------unifier_dataframe-----################ 
+   ###########----------------unifier_dataframe-----################ 
 colonnes_standard=["ID Medecin","Statut","Prénom","Nom","Sexe","Spécialité","Ville","Date de Naissance","Téléphone","WhatsApp","Fix","Email","Duree","Date de Connexion","Date Extraction","Plateforme"]
 def unifier_dataframe(df,plateforme):
     df=df.copy()
@@ -1711,212 +1721,297 @@ def attribuer_ids_df_hash_simple(df, db, collection_name="collection_globale"):
             df_out[field] = df_out[field].apply(lambda v: to_id_dict(field, v))
 
     return df_out, maps
-##########------------Code de detetion des elements présents,absents et modifiés-------#####################
-from pymongo import MongoClient
-from datetime import datetime
-from ConnexionMongo_DB import get_db
-import pandas as pd
+ ##########------------Code de detetion des elements présents,absents et modifiés-------#####################
 
-def detecter_changement_par_plateforme(db=None):
-    if db is None:
-        db = get_db()
-    collection = db["collection_globale"]
-
-    # 1) Récupérer les 2 dernières dates
-    dates = sorted(collection.distinct("Date Extraction"))
-    if len(dates) < 2:
-        print("Pas assez de versions pour comparaison.")
-        return pd.DataFrame()
-
-    date_old, date_new = dates[-2], dates[-1]
-    print(f"Comparaison entre {date_old} et {date_new}")
-
-    # 2) Récupérer les plateformes PAR ID (évite les dicts non hashables)
-    plateformes_ids = collection.distinct("Plateforme.id")
-
-    stats = {}
-
-    for pf_id in plateformes_ids:
-        # Récupérer un libellé pour l’affichage (facultatif mais pratique)
-        pf_doc = collection.find_one({"Plateforme.id": pf_id}, {"Plateforme.libelle": 1})
-        pf_lib = (pf_doc or {}).get("Plateforme", {}).get("libelle", str(pf_id))
-
-        print(f"Traitement de la plateforme: {pf_lib} ({pf_id})")
-
-        # 3) Filtrer uniquement Actif/Passif (exclure les fictifs)
-        statut_filtre = {"$in": ["Actif", "Passif"]}
-
-        # 4) Charger vieux/nouveau snapshot pour cette plateforme
-        docs_old = list(collection.find(
-            {"Date Extraction": date_old, "Plateforme.id": pf_id, "Statut": statut_filtre},
-            {"_id": 0}
-        ))
-        docs_new = list(collection.find(
-            {"Date Extraction": date_new, "Plateforme.id": pf_id, "Statut": statut_filtre},
-            {"_id": 0}
-        ))
-
-        # 5) Définir une clé stable d’identification de médecin
-        #    Adapte 'Medecin_id' au vrai champ unique que TU utilises.
-        def key(doc):
-            return (
-                doc.get("Medecin_id")
-                or doc.get("Profil_id")
-                or (doc.get("Nom"), doc.get("Prénom"), doc.get("Ville"), doc.get("Spécialité"))
-            )
-
-        old_keys = {key(d) for d in docs_old}
-        new_keys = {key(d) for d in docs_new}
-
-        ajoutes_keys   = new_keys - old_keys
-        supprimes_keys = old_keys - new_keys
-        communs_keys   = new_keys & old_keys
-
-        # 6) Détection des modifiés (sur les communs) — optionnel selon ton besoin
-        #    Ici on compare un sous-ensemble de champs
-        champs_a_verifier = ["Statut", "Téléphone", "Adresse", "Spécialité", "Ville"]
-        old_index = {key(d): d for d in docs_old}
-        new_index = {key(d): d for d in docs_new}
-
-        modifies_keys = set()
-        for k in communs_keys:
-            o, n = old_index[k], new_index[k]
-            if any((o.get(ch) != n.get(ch)) for ch in champs_a_verifier):
-                modifies_keys.add(k)
-
-        # 7) Ranger les chiffres avec une clé HASHABLE : pf_id (string)
-        stats[pf_id] = {
-            "plateforme_libelle": pf_lib,
-            "date_old": date_old,
-            "date_new": date_new,
-            "ajoutes": len(ajoutes_keys),
-            "supprimes": len(supprimes_keys),
-            "modifies": len(modifies_keys),
-            # si tu veux les listes :
-            # "ajoutes_list": list(ajoutes_keys),
-            # "supprimes_list": list(supprimes_keys),
-            # "modifies_list": list(modifies_keys),
-        }
-
-    # 8) Convertir en DataFrame si tu en as besoin (ou retourne le dict)
-    df_stats = pd.DataFrame.from_dict(stats, orient="index").reset_index().rename(columns={"index": "Plateforme_id"})
-    return df_stats
 
 #####
  
-def detecter_changement_par_plateforme():
-    # 1) Dates
-    client = MongoClient("mongodb+srv://Sal123:AZEQSDAZEQSD@cluster0.vd6q5oj.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")   # <-- ta connexion
-    db = client["BaseMedicale"]        # <-- ta base
-    collection = db["collection_globale"]   # <-- ta collection
-    changelog = db["changements_collection_globale"]
-    dates = sorted(collection.distinct("Date Extraction"))
-    if len(dates) < 2:
-        print("Pas assez de versions pour comparaison.")
+
+
+from datetime import datetime
+from pymongo import MongoClient, InsertOne
+import os
+
+MONGO_URI = os.getenv("MONGO_URI")
+MONGO_DB  = os.getenv("MONGO_DB")
+
+from pymongo import MongoClient, ASCENDING, InsertOne
+from datetime import datetime
+
+def detecter_changement_par_plateforme( 
+    date_extraction_new: str | None = None,   # ← si None => on prend la plus récente en base
+    date_extraction_old: str | None = None    # ← si None => on compare la plus récente à TOUTES les dates avant
+    ):
+    
+    client = MongoClient(
+        MONGO_URI,
+        maxPoolSize=30,
+        serverSelectionTimeoutMS=5000,
+        socketTimeoutMS=20000,
+        retryWrites=True,
+    )
+    db = client[MONGO_DB]
+    collection = db["collection_globale"]
+    changelog  = db["changements_uniques"]
+
+    # Index idempotents
+    try:
+        collection.create_index(
+            [("Date Extraction", 1), ("Plateforme.id", 1), ("ID Medecin", 1)],
+            name="idx_date_pf_id", background=True
+        )
+        collection.create_index([("Plateforme.id", 1)], name="idx_pf", background=True)
+        collection.create_index([("ID Medecin", 1)], name="idx_idmed", background=True)
+        changelog.create_index(
+            [("date_extraction_new", 1), ("type", 1)],
+            name="idx_chg_date_type", background=True
+        )
+        changelog.create_index(
+            [("date_extraction_old", 1), ("type", 1)],
+            name="idx_chg_old_date_type", background=True
+        )
+    except Exception:
+        pass
+
+    # ---------- Résolution de la "new" (toujours la dernière si None) ----------
+    all_dates = sorted(collection.distinct("Date Extraction"))
+    if not all_dates:
+        print("Aucune date en base.")
         return {
             "totaux": {"ajouts": 0, "suppressions": 0, "modifications": 0},
             "par_plateforme": {},
             "periode": None
         }
 
-    date_old, date_new = dates[-2], dates[-1]
-    print(f"Comparaison entre {date_old} et {date_new}")
+    if date_extraction_new:
+        # si fournie mais absente, on s’aligne sur la plus proche <=
+        if date_extraction_new not in all_dates:
+            date_extraction_new = max([d for d in all_dates if d <= date_extraction_new], default=all_dates[-1])
+    else:
+        date_extraction_new = all_dates[-1]
 
-    # 2) Helpers
+    # ---------- Politique "old" ----------
+    #   - si None  → mode "ALL BEFORE": on compare new à tout ce qui est < new
+    #   - si fournie → comparaison stricte old vs new (non consécutive OK)
+    mode_all_before = date_extraction_old is None
+
+    # ---------- Helpers ----------
     def statut_norm(doc):
         s = doc.get("Statut", "")
         if isinstance(s, dict):
             s = s.get("libelle") or ""
         return str(s).strip().lower()
 
-    allowed = {"actif", "passif"}  # on exclut "fictif"
+    allowed = {"actif", "passif"}  # enlève ce filtre si tu veux inclure fictifs
 
-    # 3) Boucle plateformes (par ID)
-    plateformes_ids = collection.distinct("Plateforme.id")
-    stats = {}  # {pf_id: {"Ajouts": n, "Suppressions": n, "Modifications": n, "libelle": str}}
-    tot_aj, tot_sup, tot_mod = 0, 0, 0
+    champs_a_verifier = [
+        "ID Medecin","Statut","Prénom","Nom","Sexe","Spécialité","Ville","Téléphone",
+        "Fix","WhatsApp","Email","Date de Naissance","Langues Parlées","Duree",
+        "Date de Connexion","Plateforme"
+    ]
+    # === PATCH anti "Path collision" ===
+    # On ne projette PAS Plateforme ET Plateforme.libelle en même temps.
+    proj = {c: 1 for c in champs_a_verifier if c != "Plateforme"}
+    proj.update({"Plateforme": 1, "_id": 0})
+    # === fin patch ===
+
+    # Pour le NEW: base de requête
+    def _allowed_filter_or():
+        lst = ["actif","passif","Actif","Passif","ACTIF","PASSIF"]
+        return {"$or": [{"Statut": {"$in": lst}}, {"Statut.libelle": {"$in": lst}}]}
+
+    status_q = _allowed_filter_or()
+
     date_interrogation = datetime.now()
-    
+    tot_aj = tot_sup = tot_mod = 0
+    stats_pf_raw = {}
+
+    print(
+        "[MODE] ",
+        "ALL BEFORE (< new)" if mode_all_before else f"PAIRE (old={date_extraction_old}, new={date_extraction_new})"
+    )
+
+    # Liste des plateformes présentes (au moins en NEW)
+    plateformes_ids = collection.distinct("Plateforme.id", {"Date Extraction": date_extraction_new})
+
+    # ---------- Helper: fetch NEW docs ciblés (ajout + communs) ----------
+    def _fetch_docs(date_val, pf_id, ids_set):
+        if not ids_set:
+            return {}
+        ids_list = list(ids_set)
+        out = {}
+        CHUNK = 2000
+        for i in range(0, len(ids_list), CHUNK):
+            chunk = ids_list[i:i+CHUNK]
+            q = {"Date Extraction": date_val, "Plateforme.id": pf_id, "ID Medecin": {"$in": chunk}}
+            # filtre statut
+            q = {"$and": [q, status_q]}
+            for d in collection.find(q, projection=proj).batch_size(10000):
+                _id = d.get("ID Medecin")
+                if _id is None:
+                    continue
+                if statut_norm(d) in allowed:
+                    out[_id] = d
+        return out
+
+    # ---------- Helper: récupérer le "dernier doc avant NEW" pour un set d'IDs ----------
+    def _fetch_latest_before(date_new, pf_id, ids_set):
+        """
+        Pour chaque ID, on récupère le document le plus récent STRICTEMENT avant date_new.
+        Implémente via pipeline: $match (id in, pf_id, date<new), $sort desc, $group first.
+        """
+        if not ids_set:
+            return {}
+        ids_list = list(ids_set)
+        out = {}
+        CHUNK = 1500
+        for i in range(0, len(ids_list), CHUNK):
+            chunk = ids_list[i:i+CHUNK]
+            pipeline = [
+                {"$match": {
+                    "Plateforme.id": pf_id,
+                    "ID Medecin": {"$in": chunk},
+                    "Date Extraction": {"$lt": date_new},
+                    "$or": [
+                        {"Statut": {"$in": ["actif","passif","Actif","Passif","ACTIF","PASSIF"]}},
+                        {"Statut.libelle": {"$in": ["actif","passif","Actif","Passif","ACTIF","PASSIF"]}}
+                    ]
+                }},
+                {"$sort": {"Date Extraction": -1}},
+                {"$group": {"_id": "$ID Medecin", "doc": {"$first": "$$ROOT"}}},
+                {"$replaceRoot": {"newRoot": "$doc"}},
+                {"$project": proj}
+            ]
+            for d in collection.aggregate(pipeline, allowDiskUse=True):
+                _id = d.get("ID Medecin")
+                if _id is None:
+                    continue
+                if statut_norm(d) in allowed:
+                    out[_id] = d
+        return out
+
     for pf_id in plateformes_ids:
-        # récupérer 1 libellé pour logs/retour
-        pf_doc = collection.find_one({"Plateforme.id": pf_id}, {"Plateforme.libelle": 1})
-        pf_lib = (pf_doc or {}).get("Plateforme", {}).get("libelle", str(pf_id))
+        # --- Ensemble NEW (IDs à la dernière date) ---
+        base_new = {"Date Extraction": date_extraction_new, "Plateforme.id": pf_id}
+        base_new = {"$and": [base_new, status_q]}
 
-        print(f"Traitement de la plateforme: {pf_lib} ({pf_id})")
+        try:
+            ids_new = set(collection.distinct("ID Medecin", base_new))
+        except Exception:
+            ids_new = set()
 
-        docs_old = list(collection.find({"Date Extraction": date_old, "Plateforme.id": pf_id}))
-        docs_new = list(collection.find({"Date Extraction": date_new, "Plateforme.id": pf_id}))
-
-        old_by_id = {
-            d["ID Medecin"]: d
-            for d in docs_old
-            if "ID Medecin" in d and statut_norm(d) in allowed
-        }
-        new_by_id = {
-            d["ID Medecin"]: d
-            for d in docs_new
-            if "ID Medecin" in d and statut_norm(d) in allowed
-        }
-
-        ids_old = set(old_by_id)
-        ids_new = set(new_by_id)
+        if mode_all_before:
+            # === Mode A: comparer NEW à "tout ce qui est avant"
+            base_old_any = {
+                "Plateforme.id": pf_id,
+                "Date Extraction": {"$lt": date_extraction_new},
+                "$or": [
+                    {"Statut": {"$in": ["actif","passif","Actif","Passif","ACTIF","PASSIF"]}},
+                    {"Statut.libelle": {"$in": ["actif","passif","Actif","Passif","ACTIF","PASSIF"]}}
+                ]
+            }
+            try:
+                ids_old = set(collection.distinct("ID Medecin", base_old_any))
+            except Exception:
+                ids_old = set()
+        else:
+            # === Mode B: comparer NEW à une date OLD explicite (non consécutive OK)
+            base_old = {"Date Extraction": date_extraction_old, "Plateforme.id": pf_id}
+            base_old = {"$and": [base_old, status_q]}
+            try:
+                ids_old = set(collection.distinct("ID Medecin", base_old))
+            except Exception:
+                ids_old = set()
 
         ids_ajoutes   = ids_new - ids_old
         ids_supprimes = ids_old - ids_new
-        ids_communs   = ids_old & ids_new
+        ids_communs   = ids_new & ids_old
 
-        # --- Ajouts ---
+        # NEW docs: ajouts + communs
+        new_by_id = _fetch_docs(date_extraction_new, pf_id, ids_ajoutes | ids_communs)
+
+        # OLD docs:
+        if mode_all_before:
+            # pour les suppressions/communs : dernier doc AVANT new
+            old_by_id = _fetch_latest_before(date_extraction_new, pf_id, ids_communs | ids_supprimes)
+            date_old_display = "__ALL_BEFORE__"
+        else:
+            # date old précise
+            old_by_id = _fetch_docs(date_extraction_old, pf_id, ids_communs | ids_supprimes)
+            date_old_display = date_extraction_old
+
+        # libellé plateforme (safe) — PATCH: projeter Plateforme (pas Plateforme.libelle)
+        any_doc = (next(iter(new_by_id.values()), None) or
+                   next(iter(old_by_id.values()), None) or
+                   collection.find_one(
+                       {"Plateforme.id": pf_id, "Date Extraction": date_extraction_new},
+                       {"Plateforme": 1, "_id": 0}   # ← patch ici
+                   ) or {})
+        pf_lib = (
+            ((any_doc.get("Plateforme") or {}).get("libelle"))
+            if isinstance(any_doc.get("Plateforme"), dict) else
+            str(pf_id)
+        )
+
+        # Changelog en bulk
+        ops_add, ops_del, ops_mod = [], [], []
+
         for _id in ids_ajoutes:
-            changelog.insert_one({
+            doc_new = new_by_id.get(_id)
+            if not doc_new:
+                continue
+            ops_add.append(InsertOne({
                 "type": "ajout",
                 "ID Medecin": _id,
                 "plateforme": {"id": pf_id, "libelle": pf_lib},
-                "nouveau": new_by_id[_id],
+                "nouveau": doc_new,
                 "date_interrogation": date_interrogation,
-                "date_extraction_old": date_old,
-                "date_extraction_new": date_new
-            })
+                "date_extraction_old": date_old_display,
+                "date_extraction_new": date_extraction_new
+            }))
 
-        # --- Suppressions ---
         for _id in ids_supprimes:
-            changelog.insert_one({
+            # en mode ALL_BEFORE on prend le dernier doc avant NEW; sinon doc à OLD
+            doc_old = old_by_id.get(_id)
+            ops_del.append(InsertOne({
                 "type": "suppression",
                 "ID Medecin": _id,
                 "plateforme": {"id": pf_id, "libelle": pf_lib},
-                "ancien": old_by_id[_id],
+                "ancien": doc_old if doc_old else {"ID Medecin": _id},  # safe
                 "date_interrogation": date_interrogation,
-                "date_extraction_old": date_old,
-                "date_extraction_new": date_new
-            })
+                "date_extraction_old": date_old_display,
+                "date_extraction_new": date_extraction_new
+            }))
 
-        # --- Modifications ---
-        champs_a_verifier = [
-            "ID Medecin","Statut","Prénom","Nom","Sexe","Spécialité","Ville","Téléphone",
-            "Fix","WhatsApp","Email","Date de Naissance","Langues Parlées","Duree",
-            "Date de Connexion","Plateforme"
-        ]
         nb_modifies = 0
         for _id in ids_communs:
-            old_doc = old_by_id[_id]
-            new_doc = new_by_id[_id]
+            old_doc = old_by_id.get(_id); new_doc = new_by_id.get(_id)
+            if not old_doc or not new_doc:
+                continue
             differences = {}
             for champ in champs_a_verifier:
                 if old_doc.get(champ) != new_doc.get(champ):
                     differences[champ] = {"avant": old_doc.get(champ), "apres": new_doc.get(champ)}
             if differences:
                 nb_modifies += 1
-                changelog.insert_one({
+                ops_mod.append(InsertOne({
                     "type": "modification",
                     "ID Medecin": _id,
                     "plateforme": {"id": pf_id, "libelle": pf_lib},
                     "modifications": differences,
                     "date_interrogation": date_interrogation,
-                    "date_extraction_old": date_old,
-                    "date_extraction_new": date_new
-                })
+                    "date_extraction_old": date_old_display,
+                    "date_extraction_new": date_extraction_new
+                }))
 
-        # --- Comptage plateforme + totaux ---
-        stats[pf_id] = {
+        if ops_add:
+            changelog.bulk_write(ops_add, ordered=False)
+        if ops_del:
+            changelog.bulk_write(ops_del, ordered=False)
+        if ops_mod:
+            changelog.bulk_write(ops_mod, ordered=False)
+
+        stats_pf_raw[pf_id] = {
             "libelle": pf_lib,
             "Ajouts": len(ids_ajoutes),
             "Suppressions": len(ids_supprimes),
@@ -1926,19 +2021,24 @@ def detecter_changement_par_plateforme():
         tot_sup += len(ids_supprimes)
         tot_mod += nb_modifies
 
-        print(f"Plateforme: {pf_lib} - Ajouts: {stats[pf_id]['Ajouts']} "
-              f"- Suppressions: {stats[pf_id]['Suppressions']} "
-              f"- Modifications: {stats[pf_id]['Modifications']}")
+        print(f"Plateforme: {pf_lib} - Ajouts: {stats_pf_raw[pf_id]['Ajouts']} "
+              f"- Suppressions: {stats_pf_raw[pf_id]['Suppressions']} "
+              f"- Modifications: {stats_pf_raw[pf_id]['Modifications']}")
 
-    # 4) Retour
+    # Normalisation pour l’UI
+    par_plateforme = {}
+    for pf_id, rec in stats_pf_raw.items():
+        lib = rec.get("libelle") or str(pf_id)
+        a = int(rec.get("Ajouts", 0) or 0)
+        m = int(rec.get("Modifications", 0) or 0)
+        s = int(rec.get("Suppressions", 0) or 0)
+        par_plateforme[lib] = {"ajouts": a, "modifications": m, "suppressions": s, "total": a + m + s}
+
     return {
-        "totaux": {
-            "ajouts": tot_aj,
-            "suppressions": tot_sup,
-            "modifications": tot_mod
-        },
-        "par_plateforme": stats,  # clés = IDs; valeur contient le libellé
-        "periode": {"old": date_old, "new": date_new}
+        "totaux": {"ajouts": tot_aj, "suppressions": tot_sup, "modifications": tot_mod},
+        "par_plateforme": par_plateforme,
+        "periode": {"old": ("<TOUTES_AVANT>" if mode_all_before else date_extraction_old),
+                    "new": date_extraction_new}
     }
 
 
