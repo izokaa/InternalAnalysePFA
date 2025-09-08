@@ -1,228 +1,169 @@
 # run_logger.py
 import os
-import time
 import uuid
 import socket
 import traceback
 import logging
 from logging.handlers import RotatingFileHandler
-import datetime as dt
 from typing import Optional, Dict, Any
-import threading  # <-- pour le lock (thread-safe)
+from datetime import datetime, UTC
+from pathlib import Path
 
 from pymongo import MongoClient
 from dotenv import load_dotenv
 
-# Charger le fichier .env
+# ---------- ENV ----------
 load_dotenv()
-job_name = "scrape_all_minimal"
-MONGO_URI = os.getenv("MONGO_URI")
-MONGO_DB = os.getenv("MONGO_DB")
-LOG_FILE = os.getenv("LOG_FILE", "logs/run.log")  # pour les étapes et le suivi
+
+# Racine projet (ex: /home/salma/monitor_app). Permet de rendre LOG_FILE absolu
+# même quand le job est lancé depuis cron ou un autre cwd.
+PROJECT_ROOT = Path(os.getenv("APP_ROOT") or Path(__file__).resolve().parents[1])
+
+# Valeur .env ou défaut "logs/run.log"
+_LOG_FILE_ENV = os.getenv("LOG_FILE", "logs/run.log")
+LOG_FILE_PATH = Path(_LOG_FILE_ENV)
+if not LOG_FILE_PATH.is_absolute():
+    LOG_FILE_PATH = (PROJECT_ROOT / LOG_FILE_PATH).resolve()
+
+MONGO_URI = os.getenv("MONGO_URI", "mongodb://localhost:27017")
+MONGO_DB  = os.getenv("MONGO_DB",  "monitor_app")
+LOG_FILE  = str(LOG_FILE_PATH)  # string pour le handler logging
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+LOG_MAX_BYTES    = int(os.getenv("LOG_MAX_BYTES", "1048576"))   # 1MB
+LOG_BACKUP_COUNT = int(os.getenv("LOG_BACKUP_COUNT", "5"))
 
 
-def _incr_nested(metrics: dict, path: list[str], delta: int = 1):
-    """
-    Incrémente metrics[path[0]]...path[-1] += delta en créant les nœuds si besoin.
-    Ex: _incr_nested(m, ["per_platform", "dabadoc", "rows"], 3)
-    -> m = {"per_platform": {"dabadoc": {"rows": 3}}}
-    """
-    cur = metrics
-    for k in path[:-1]:
-        if k not in cur or not isinstance(cur[k], dict):
-            cur[k] = {}
-        cur = cur[k]
-    last = path[-1]
+def _iso_now() -> str:
+    return datetime.now(UTC).isoformat()
+
+
+def _incr_nested(d: dict, path: str, delta: int | float = 1):
+    parts = path.split(".") if isinstance(path, str) else list(path)
+    cur = d
+    for p in parts[:-1]:
+        if p not in cur or not isinstance(cur[p], dict):
+            cur[p] = {}
+        cur = cur[p]
+    last = parts[-1]
     cur[last] = (cur.get(last, 0) or 0) + delta
 
 
 class RunLogger:
     """
-    - LOG FICHIER: start/steps/errors/fin (suivi détaillé lisible par cron)
-    - MONGODB: résumé seulement (start/end/duration/status/errors/metrics)
-
-    METRICS format (simple et clair, demandé):
-    {
-      "per_platform": {
-        "dabadoc":   {"rows": 120},
-        "nabady":    {"rows": 110},
-        "med.ma":    {"rows": 130},
-        "docdialy":  {"rows": 95}
-      },
-      "rows_total": 455
-    }
+    Version minimale compatible avec tes jobs:
+      - rl = RunLogger("scrape_all_minimal")
+      - rl.start(tags=[...])
+      - rl.event("texte", level="INFO", step="scrape_med")
+      - rl.incr("rows_med", len(df))
+      - rl.finish_success() / rl.finish_error(e)
+      - rl.db  (accès natif à Mongo)
+      - rl.run_id (string)
     """
-    def __init__(self, job_name: str):
-        # Mongo (résumé)
-        self.client = MongoClient(MONGO_URI)
-        self.db = self.client[MONGO_DB]
-        try:
-            self.db.runs.create_index([("job_name", 1), ("status", 1)])
-        except Exception:
-            pass
-
-        # Identité du run
-        self.job_name = job_name
-        self.run_id = f"{dt.datetime.utcnow().isoformat()}-{uuid.uuid4()}"
-        self.t0: Optional[float] = None
-
-        # METRICS: uniquement name + nombre de rows (et total)
+    def __init__(self, job_name: Optional[str] = None):
+        self.job_name = job_name or "default_job"
+        self.run_id   = f"{_iso_now()}-{uuid.uuid4()}"
+        self.host     = socket.gethostname()
+        self.pid      = os.getpid()
         self.metrics: Dict[str, Any] = {}
-        self._lock = threading.Lock()  # <-- important pour écriture concurrente
+        self.tags: list[str] = []
 
-        # Logger fichier (rotation)
+        # --- Mongo
+        self._client = MongoClient(MONGO_URI)
+        self.db      = self._client[MONGO_DB]
+
+        # --- Logger fichier (rotation)
         os.makedirs(os.path.dirname(LOG_FILE) or ".", exist_ok=True)
         self.logger = logging.getLogger(f"run.{self.job_name}")
-        self.logger.setLevel(logging.INFO)
+        # éviter les handlers dupliqués si plusieurs RunLogger sont créés
         if not self.logger.handlers:
-            handler = RotatingFileHandler(LOG_FILE, maxBytes=2_000_000, backupCount=5)
-            handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
-            self.logger.addHandler(handler)
-
-    # ————— Helpers —————
-    def _has_running_instance(self) -> Optional[dict]:
-        """
-        Retourne le dernier run 'running' pour ce job s'il existe, sinon None.
-        """
-        return self.db.runs.find_one(
-            {"job_name": self.job_name, "status": "running"},
-            sort=[("started_at", -1)]
-        )
-
-    # ————— API —————
-    def start(self, tags=None):
-        existing = self._has_running_instance()
-        if existing:
-            raise RuntimeError(
-                f"Un run '{self.job_name}' est déjà en cours "
-                f"(run_id={existing.get('run_id')}, démarré le {existing.get('started_at')})."
+            self.logger.setLevel(getattr(logging, LOG_LEVEL.upper(), logging.INFO))
+            fmt = logging.Formatter("%(asctime)s | %(levelname)s | %(message)s")
+            fh  = RotatingFileHandler(
+                LOG_FILE,
+                maxBytes=LOG_MAX_BYTES,
+                backupCount=LOG_BACKUP_COUNT,
+                encoding="utf-8"
             )
+            fh.setFormatter(fmt)
+            self.logger.addHandler(fh)
 
-        self.t0 = time.perf_counter()
-
-        # Log fichier (début)
-        self.logger.info(
-            f"[{self.job_name}] ▶️ Début extraction | run_id={self.run_id} | tags={tags or []} | host={socket.gethostname()}"
-        )
-
-        # Résumé DB (status running)
-        self.db.runs.insert_one({
+    # --------- Cycle de vie ---------
+    def start(self, tags: Optional[list[str]] = None, extra: Optional[dict] = None):
+        self.tags = list(tags or [])
+        doc = {
             "run_id": self.run_id,
-            "job_name": self.job_name,
+            "name": self.job_name,
+            "host": self.host,
+            "pid": self.pid,
+            "tags": self.tags,
             "status": "running",
-            "started_at": dt.datetime.utcnow(),
-            "finished_at": None,
-            "duration_sec": None,
-            "env": {"host": socket.gethostname()},
+            "state": "running",
+            "started_at": _iso_now(),
+            "updated_at": _iso_now(),
+            "last_event_at": None,
             "metrics": {},
-            "error": None,
-            "tags": tags or []
-        })
+            "events": [],   # événements embed (pratique pour SSE)
+        }
+        if extra:
+            doc.update(extra)
+        self.db.runs.insert_one(doc)
+        self.logger.info("[start] %s tags=%s", self.job_name, self.tags)
 
-    def event(self, msg: str, level: str = "INFO", step: Optional[str] = None, **kv):
+    def event(self, message: str, level: str = "INFO", step: str | None = None):
         """
-        Étapes → FICHIER UNIQUEMENT (pas en base).
+        Append un événement lisible par l’UI (SSE).
         """
-        prefix = f"[{self.job_name}]  Étape"
-        payload = f"{prefix} | {msg}"
-        if step:
-            payload += f" | step={step}"
-        if kv:
-            payload += f" | {kv}"
-        lvl = level.upper()
-        if lvl == "ERROR":
-            self.logger.error(payload)
-        elif lvl == "WARNING":
-            self.logger.warning(payload)
-        else:
-            self.logger.info(payload)
+        evt = {
+            "ts": _iso_now(),
+            "level": level,
+            "message": message,
+            "step": step,
+        }
+        self.db.runs.update_one(
+            {"run_id": self.run_id},
+            {"$push": {"events": evt},
+             "$set": {"updated_at": _iso_now(), "last_event_at": _iso_now()}}
+        )
+        try:
+            getattr(self.logger, level.lower(), self.logger.info)(message)
+        except Exception:
+            self.logger.info(message)
 
-    # ----------------- MÉTRIQUES (name + rows) -----------------
-    def add_rows(self, platform_name: str, rows_count: int):
+    def incr(self, path: str, delta: int | float = 1):
         """
-        Ajoute 'rows_count' lignes pour une plateforme donnée (thread-safe).
-        Exemple d'appel depuis un thread de scraping plateforme:
-            rl.add_rows("dabadoc", n_lignes_extraites)
+        Incrémente un compteur en mémoire (persisté à finish_*()).
+        Supporte chemin 'a.b.c' pour regrouper proprement.
         """
-        if not platform_name:
-            platform_name = "unknown"
-
-        rows_count = int(rows_count or 0)
-        if rows_count <= 0:
-            return
-
-        with self._lock:
-            # per_platform.<name>.rows += rows_count
-            _incr_nested(self.metrics, ["per_platform", platform_name, "rows"], rows_count)
-            # total global
-            _incr_nested(self.metrics, ["rows_total"], rows_count)
-
-    # (option utilitaire, si tu veux juste poser une valeur)
-    def set_rows(self, platform_name: str, rows_count: int):
-        """
-        Fixe la valeur rows pour une plateforme (réécrit la valeur).
-        Moins utilisée en pratique; 'add_rows' suffit généralement.
-        """
-        if not platform_name:
-            platform_name = "unknown"
-
-        rows_count = max(int(rows_count or 0), 0)
-        with self._lock:
-            # recalculer le total: retirer l'ancienne valeur si elle existe puis ajouter la nouvelle
-            old = ((self.metrics.get("per_platform", {}) or {}).get(platform_name, {}) or {}).get("rows", 0)
-            # set
-            if "per_platform" not in self.metrics or not isinstance(self.metrics["per_platform"], dict):
-                self.metrics["per_platform"] = {}
-            if platform_name not in self.metrics["per_platform"] or not isinstance(self.metrics["per_platform"][platform_name], dict):
-                self.metrics["per_platform"][platform_name] = {}
-            self.metrics["per_platform"][platform_name]["rows"] = rows_count
-
-            # total
-            current_total = int(self.metrics.get("rows_total", 0) or 0)
-            current_total = current_total - int(old or 0) + rows_count
-            self.metrics["rows_total"] = max(current_total, 0)
-
-    # -----------------------------------------------------------
+        _incr_nested(self.metrics, path, delta)
 
     def finish_success(self):
-        dur = round(time.perf_counter() - self.t0, 3) if self.t0 else None
-        # Log fichier (fin)
-        self.logger.info(
-            f"[{self.job_name}]  Fin extraction | statut=success | durée_sec={dur} | run_id={self.run_id}"
-        )
-        # Résumé DB (success)
         self.db.runs.update_one(
             {"run_id": self.run_id},
             {"$set": {
                 "status": "success",
-                "finished_at": dt.datetime.utcnow(),
-                "duration_sec": dur,
+                "state": "finished",
+                "finished_at": _iso_now(),
+                "updated_at": _iso_now(),
                 "metrics": self.metrics
             }}
         )
+        self.logger.info("[finish_success] %s", self.job_name)
 
     def finish_error(self, err: Exception):
-        dur = round(time.perf_counter() - self.t0, 3) if self.t0 else None
         err_doc = {
             "type": type(err).__name__,
-            "message": str(err),
-            "traceback": traceback.format_exc()[:8000],  # résumé
+            "msg": str(err),
+            "trace": traceback.format_exc()
         }
-        # Log fichier (erreur + fin)
-        self.logger.error(
-            f"[{self.job_name}]  ERREUR | {err_doc['type']}: {err_doc['message']}\n{err_doc['traceback']}"
-        )
-        self.logger.info(
-            f"[{self.job_name}]  Fin extraction | statut=failed | durée_sec={dur} | run_id={self.run_id}"
-        )
-        # Résumé DB (failed)
         self.db.runs.update_one(
             {"run_id": self.run_id},
             {"$set": {
-                "status": "failed",
-                "finished_at": dt.datetime.utcnow(),
-                "duration_sec": dur,
-                "error": err_doc,
-                "metrics": self.metrics
+                "status": "error",
+                "state": "finished",
+                "finished_at": _iso_now(),
+                "updated_at": _iso_now(),
+                "metrics": self.metrics,
+                "error": err_doc
             }}
         )
+        self.logger.error("[finish_error] %s | %s", self.job_name, err_doc["msg"])
